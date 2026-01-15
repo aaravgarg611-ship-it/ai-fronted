@@ -1,112 +1,44 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>My AI Chat</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-
-    .chat-container {
-      width: 400px;
-      height: 500px;
-      background: white;
-      border-radius: 10px;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 0 10px rgba(0,0,0,0.2);
-    }
-
-    .chat-box {
-      flex: 1;
-      padding: 10px;
-      overflow-y: auto;
-    }
-
-    .user {
-      text-align: right;
-      margin: 5px 0;
-      color: blue;
-    }
-
-    .bot {
-      text-align: left;
-      margin: 5px 0;
-      color: green;
-    }
-
-    .input-area {
-      display: flex;
-      border-top: 1px solid #ccc;
-    }
-
-    .input-area input {
-      flex: 1;
-      padding: 10px;
-      border: none;
-      outline: none;
-    }
-
-    .input-area button {
-      padding: 10px 15px;
-      border: none;
-      background: #4CAF50;
-      color: white;
-      cursor: pointer;
-    }
-  </style>
+  <title>AI Assistant</title>
 </head>
 <body>
+  <h2>Ask AI</h2>
+  <input id="q" placeholder="Ask something" />
+  <button onclick="ask()">Ask</button>
+  <p id="status"></p>
+  <pre id="ans"></pre>
 
-<div class="chat-container">
-  <div id="chat" class="chat-box"></div>
+  <script>
+    const BACKEND = "https://ai-backend-shkw.onrender.com";
 
-  <div class="input-area">
-    <input id="message" type="text" placeholder="Ask me anything..." />
-    <button onclick="sendMessage()">Send</button>
-  </div>
-</div>
+    async function wakeUp() {
+      document.getElementById("status").innerText = "Waking up server...";
+      await fetch(BACKEND); // wake-up call
+    }
 
-<script>
-async function sendMessage() {
-  const input = document.getElementById("message");
-  const chat = document.getElementById("chat");
-  const text = input.value.trim();
+    async function ask() {
+      const q = document.getElementById("q").value;
+      document.getElementById("status").innerText = "Thinking... (first time may take 30s)";
+      
+      try {
+        await wakeUp();
 
-  if (text === "") return;
+        const res = await fetch(BACKEND + "/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: q })
+        });
 
-  chat.innerHTML += `<div class="user">You: ${text}</div>`;
-  input.value = "";
+        const data = await res.json();
+        document.getElementById("ans").innerText = data.answer || data.error;
+        document.getElementById("status").innerText = "Done ✅";
 
-  chat.innerHTML += `<div class="bot" id="thinking">Thinking...</div>`;
-  chat.scrollTop = chat.scrollHeight;
-
-  try {
-    const response = await fetch("http://127.0.0.1:5000/ask", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ message: text })
-    });
-
-    const data = await response.json();
-    document.getElementById("thinking").remove();
-    chat.innerHTML += `<div class="bot">AI: ${data.answer}</div>`;
-    chat.scrollTop = chat.scrollHeight;
-
-  } catch (e) {
-    document.getElementById("thinking").remove();
-    chat.innerHTML += `<div class="bot">Error: Backend not responding</div>`;
-  }
-}
-</script>
-
+      } catch (e) {
+        document.getElementById("status").innerText = "Server waking up… try again in 10 sec";
+      }
+    }
+  </script>
 </body>
 </html>
